@@ -11,6 +11,7 @@ import { Analysis } from './pages/Analysis';
 import { Planning } from './pages/Planning';
 import { Settings } from './pages/Settings';
 import { EntryEditor } from './components/EntryForm';
+import { LockScreen } from './components/LockScreen';
 import { MonthSwitcher, useSwipe } from './components/rows';
 import { cx, IconButton } from './components/ui';
 
@@ -190,8 +191,10 @@ function ToastView() {
 
 export default function App() {
   return (
-    <StoreProvider>
-      <Shell />
-    </StoreProvider>
+    <LockScreen>
+      <StoreProvider>
+        <Shell />
+      </StoreProvider>
+    </LockScreen>
   );
 }
