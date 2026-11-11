@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { BarChart3, Home, Landmark, List, Plus, Settings as SettingsIcon, Target, Undo2, X } from 'lucide-react';
-import { StoreProvider, useStore } from './lib/store';
+import { useStore } from './lib/store';
 import { addMonths, ymd } from './lib/dates';
 import { upcoming } from './lib/engine';
 import { eur } from './lib/money';
@@ -12,6 +12,7 @@ import { Planning } from './pages/Planning';
 import { Settings } from './pages/Settings';
 import { EntryEditor } from './components/EntryForm';
 import { LockScreen } from './components/LockScreen';
+import { Avatar, ProfileGate } from './components/ProfileGate';
 import { MonthSwitcher, useSwipe } from './components/rows';
 import { cx, IconButton } from './components/ui';
 
@@ -55,21 +56,21 @@ function useTheme() {
 
 /** Einmal täglich eine Mitteilung über bald fällige Zahlungen (falls erlaubt). */
 function useDailyReminder() {
-  const { state, today } = useStore();
+  const { state, today, profile } = useStore();
   useEffect(() => {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     try {
-      if (localStorage.getItem('finanzen.notified') === today) return;
+      if (localStorage.getItem(`finanzen.notified.${profile.id}`) === today) return;
       const due = upcoming(state, today, state.settings.reminderDays);
       if (!due.length) return;
       new Notification('Bald fällig', { body: due.slice(0, 4).map((o) => `${o.name}: ${eur(o.amountCents)}`).join('\n'), icon: 'icon-192.png' });
-      localStorage.setItem('finanzen.notified', today);
+      localStorage.setItem(`finanzen.notified.${profile.id}`, today);
     } catch { /* manche Browser erlauben new Notification() nicht */ }
-  }, [state, today]);
+  }, [state, today, profile.id]);
 }
 
 function Shell() {
-  const { today, openEditor, editor } = useStore();
+  const { today, openEditor, editor, profile, switchProfile } = useStore();
   const [page, go] = usePage();
   const [ty, tm] = ymd(today);
   const [offset, setOffset] = useState(0);
@@ -120,6 +121,13 @@ function Shell() {
             </button>
           ))}
         </nav>
+        <button onClick={switchProfile} title="Profil wechseln" className="mt-auto flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm transition hover:bg-slate-100 dark:hover:bg-white/5">
+          <Avatar profile={profile} className="size-8 text-sm" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-semibold">{profile.name}</span>
+            <span className="block text-xs text-slate-500 dark:text-slate-400">Profil wechseln</span>
+          </span>
+        </button>
       </aside>
 
       <div className="min-w-0 flex-1" {...swipe}>
@@ -130,7 +138,12 @@ function Shell() {
             ) : (
               <h1 className="text-xl font-extrabold tracking-tight">{current.title}</h1>
             )}
-            <IconButton label="Einstellungen" onClick={() => go('settings')} className={cx('lg:hidden', page === 'settings' && 'text-accent')}><SettingsIcon size={20} /></IconButton>
+            <div className="flex items-center gap-1 lg:hidden">
+              <IconButton label="Einstellungen" onClick={() => go('settings')} className={cx(page === 'settings' && 'text-accent')}><SettingsIcon size={20} /></IconButton>
+              <button onClick={switchProfile} aria-label={`Profil ${profile.name} – wechseln`} title="Profil wechseln" className="rounded-full p-1 active:scale-95">
+                <Avatar profile={profile} className="size-8 text-sm" />
+              </button>
+            </div>
           </div>
         </header>
 
@@ -192,9 +205,9 @@ function ToastView() {
 export default function App() {
   return (
     <LockScreen>
-      <StoreProvider>
+      <ProfileGate>
         <Shell />
-      </StoreProvider>
+      </ProfileGate>
     </LockScreen>
   );
 }

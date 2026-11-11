@@ -50,9 +50,13 @@ export function Dashboard({ nav }: { nav: MonthNav }) {
         <div className="relative">
           <p className="text-sm font-medium text-slate-300">Frei verfügbar im {monthName(m)}</p>
           <p className={cx('tabular mt-1 text-[44px] leading-none font-extrabold tracking-tight', h === 'bad' && 'text-rose-300')}>{eur(s.remainingCents)}</p>
-          <p className={cx('mt-2 flex items-center gap-1.5 text-sm font-medium', healthColor)}>
-            <span className="size-2 rounded-full" style={{ background: barColor }} />{healthText}
-          </p>
+          {s.incomeCents || s.expenseCents ? (
+            <p className={cx('mt-2 flex items-center gap-1.5 text-sm font-medium', healthColor)}>
+              <span className="size-2 rounded-full" style={{ background: barColor }} />{healthText}
+            </p>
+          ) : (
+            <p className="mt-2 text-sm font-medium text-slate-400">Tippe auf + und trag deine erste Zahlung ein</p>
+          )}
           <div className="mt-5">
             <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
               <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${spentShare * 100}%`, background: barColor }} />

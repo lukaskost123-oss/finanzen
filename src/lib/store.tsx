@@ -1,21 +1,23 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { AppState, Category, OneTime, Recurring } from './types';
-import { demoState, emptyState, uid } from './defaults';
+import { emptyState, uid } from './defaults';
 import { todayISO } from './dates';
+import { dataKey, type Profile } from './profiles';
 
-const KEY = 'finanzen.v1';
-
-function load(): AppState {
+/** Jedes Profil hat seinen eigenen Speicher; ein neues Profil startet leer bei 0 €. */
+function load(profileId: string): AppState {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(dataKey(profileId));
     if (raw) return { ...emptyState(), ...JSON.parse(raw) };
   } catch { /* beschädigte Daten → neu starten */ }
-  return demoState();
+  return emptyState();
 }
 
 export interface Toast { id: number; message: string; undo?: boolean }
 
 interface Store {
+  profile: Profile;
+  switchProfile: () => void;
   state: AppState;
   today: string;
   /** Zustand ändern; mit `toast` erscheint eine Meldung, optional mit „Rückgängig". */
@@ -44,16 +46,16 @@ export type EditorTarget =
 
 const Ctx = createContext<Store | null>(null);
 
-export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AppState>(load);
+export function StoreProvider({ profile, onSwitch, children }: { profile: Profile; onSwitch: () => void; children: ReactNode }) {
+  const [state, setState] = useState<AppState>(() => load(profile.id));
   const [toast, setToast] = useState<Toast | null>(null);
   const [editor, setEditor] = useState<EditorTarget | null>(null);
   const history = useRef<AppState | null>(null);
   const [today, setToday] = useState(todayISO);
 
   useEffect(() => {
-    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* Speicher voll / privat */ }
-  }, [state]);
+    try { localStorage.setItem(dataKey(profile.id), JSON.stringify(state)); } catch { /* Speicher voll / privat */ }
+  }, [state, profile.id]);
 
   // Datumswechsel um Mitternacht oder beim Zurückkehren in die App
   useEffect(() => {
@@ -83,6 +85,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const catMap = new Map(state.categories.map((c) => [c.id, c]));
     const fallback: Category = { id: 'sonstiges', name: 'Sonstiges', icon: 'package', color: '#64748b' };
     return {
+      profile, switchProfile: onSwitch,
       state, today, update, undo, toast, notify,
       dismissToast: () => setToast(null),
       category: (id) => catMap.get(id) ?? fallback,
@@ -118,7 +121,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       openEditor: setEditor,
       closeEditor: () => setEditor(null),
     };
-  }, [state, today, toast, editor, update, undo, notify]);
+  }, [profile, onSwitch, state, today, toast, editor, update, undo, notify]);
 
   return <Ctx.Provider value={store}>{children}</Ctx.Provider>;
 }

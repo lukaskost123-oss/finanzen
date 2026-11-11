@@ -1,15 +1,16 @@
 import { useRef, useState } from 'react';
-import { Bell, CalendarPlus, Database, Download, FileSpreadsheet, FileText, Moon, Palette, RotateCcw, Share, Smartphone, Sun, SunMoon, Tags, Trash2, Upload } from 'lucide-react';
+import { Bell, CalendarPlus, Database, Download, FileSpreadsheet, FileText, Moon, Palette, Share, Smartphone, Sun, SunMoon, Tags, Trash2, Upload } from 'lucide-react';
 import { useStore } from '../lib/store';
 import type { Category } from '../lib/types';
 import { backupJSON, exportCSV, exportICS, exportPDF, exportXLSX, importCSV, parseBackup } from '../lib/export';
-import { demoState, emptyState, uid } from '../lib/defaults';
+import { emptyState, uid } from '../lib/defaults';
+import { Avatar } from '../components/ProfileGate';
 import { COLORS, ICONS } from '../lib/icons';
 import { Button, Card, CategoryIcon, cx, Field, Input, Segmented, SectionTitle, Sheet } from '../components/ui';
 import type { MonthNav } from '../App';
 
 export function Settings({ nav }: { nav: MonthNav }) {
-  const { state, update, notify } = useStore();
+  const { state, update, notify, profile, switchProfile } = useStore();
   const [editCat, setEditCat] = useState<Category | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [busy, setBusy] = useState('');
@@ -43,6 +44,15 @@ export function Settings({ nav }: { nav: MonthNav }) {
           </div>
         </Card>
       )}
+
+      <Card className="flex items-center gap-3">
+        <Avatar profile={profile} className="size-11 text-lg" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold">{profile.name}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Angemeldetes Profil</p>
+        </div>
+        <Button variant="secondary" onClick={switchProfile}>Wechseln</Button>
+      </Card>
 
       <Card>
         <SectionTitle><span className="flex items-center gap-2"><Palette size={17} className="text-accent" /> Darstellung</span></SectionTitle>
@@ -114,10 +124,9 @@ export function Settings({ nav }: { nav: MonthNav }) {
             update(() => r.state, `${r.added} Einträge importiert${r.skipped ? `, ${r.skipped} übersprungen` : ''}`);
           });
         }} />
-        <p className="mt-2 text-xs text-slate-500">Alle Daten bleiben nur auf diesem Gerät gespeichert – keine Anmeldung, keine Cloud. Speichere regelmäßig ein Backup (z. B. in iCloud Drive).</p>
-        <div className="mt-4 grid gap-2 border-t border-slate-100 pt-4 sm:grid-cols-2 dark:border-white/5">
-          <Button variant="ghost" onClick={() => update(() => demoState(), 'Beispieldaten geladen')}><RotateCcw size={17} /> Beispieldaten laden</Button>
-          <Button variant="danger" onClick={() => setConfirmReset(true)}><Trash2 size={17} /> Alle Daten löschen</Button>
+        <p className="mt-2 text-xs text-slate-500">Die Daten deines Profils bleiben nur auf diesem Gerät gespeichert – keine Anmeldung, keine Cloud. Speichere regelmäßig ein Backup (z. B. in iCloud Drive).</p>
+        <div className="mt-4 grid gap-2 border-t border-slate-100 pt-4 dark:border-white/5">
+          <Button variant="danger" onClick={() => setConfirmReset(true)}><Trash2 size={17} /> Alle Daten dieses Profils löschen</Button>
         </div>
       </Card>
 
